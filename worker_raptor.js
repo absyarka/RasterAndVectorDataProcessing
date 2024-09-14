@@ -1,6 +1,6 @@
 "use strict";
 
-class Segment {
+class KSegment {
     constructor(y, x1, x2) {
         this.y = y;
         this.x1 = x1;
@@ -12,14 +12,14 @@ self.onmessage = function (e) {
     const { lines, polygon, pixelSizesInCoordinates } = e.data;
     const intersections = [];
     lines.forEach(y => {
-        const lineIntersections = calculateIntersections(y, polygon);
-        const points = getPointsFromLines(lineIntersections, pixelSizesInCoordinates);
+        const lineIntersections = CalculateIntersections(y, polygon);
+        const points = GetPointsFromLines(lineIntersections, pixelSizesInCoordinates);
         intersections.push(...points);
     });
     self.postMessage(intersections);
 };
 
-function calculateIntersections(y, polygon) {
+function CalculateIntersections(y, polygon) {
     const EPSILON = 1e-9;
     const N = polygon.length;
     let vertexId = new Map();
@@ -67,7 +67,7 @@ function calculateIntersections(y, polygon) {
     const K = intersectionPos.length;
     let segments = [];
     if (K == 1) {
-        segments.push(new Segment(y, intersectionPos[0], intersectionPos[0]));
+        segments.push(new KSegment(y, intersectionPos[0], intersectionPos[0]));
         return segments;
     }
     let flags = Array.from({ length: K }, (v, i) => 0);
@@ -99,30 +99,30 @@ function calculateIntersections(y, polygon) {
             }
             if (intersectionPos[i + 1] == Cx || intersectionPos[i + 1] == Bx) {
                 flags[i + 1] = 1;
-                segments.push(new Segment(y, intersectionPos[i], intersectionPos[i + 1]));
+                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
                 continue;
             }
             if (CAB < CAD) {
                 flags[i + 1] = 1;
-                segments.push(new Segment(y, intersectionPos[i], intersectionPos[i + 1]));
+                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
             } else {
-                segments.push(new Segment(y, Ax, Ax));
+                segments.push(new KSegment(y, Ax, Ax));
                 flags[i + 1] = -1;
             }
         } else {
             flags[i + 1] = -flags[i];
             if (flags[i + 1] == 1) {
-                segments.push(new Segment(y, intersectionPos[i], intersectionPos[i + 1]));
+                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
             }
         }
     }
     if (vertexIdKeys.includes(intersectionPos[K - 1])) {
-        segments.push(new Segment(y, intersectionPos[K - 1], intersectionPos[K - 1]));
+        segments.push(new KSegment(y, intersectionPos[K - 1], intersectionPos[K - 1]));
     }
-    return makePretty(segments);
+    return MakePretty(segments);
 }
 
-function makePretty(segments) {
+function MakePretty(segments) {
     let result = [];
     for (let i = 0; i < segments.length; ++i) {
         const y = segments[i].y;
@@ -132,12 +132,12 @@ function makePretty(segments) {
             ++i;
             x2 = segments[i].x2;
         }
-        result.push(new Segment(y, x1, x2));
+        result.push(new KSegment(y, x1, x2));
     }
     return result;
 }
 
-function getPointsFromLines(lines, pixelSizesInCoordinates) {
+function GetPointsFromLines(lines, pixelSizesInCoordinates) {
     let result = [];
     const stepX = pixelSizesInCoordinates[1];
     for (let i = 0; i < lines.length; ++i) {

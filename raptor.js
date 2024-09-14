@@ -1,6 +1,6 @@
 "use strict";
 
-function processLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers) {
+function ProcessLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers) {
     const workers = [];
     let results = [];
     let cnt = 0;
@@ -28,7 +28,7 @@ function processLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWor
     });
 }
 
-function getLinesArray(yMax, yMin, numWorkers, stepY) {
+function GetLinesArray(yMax, yMin, numWorkers, stepY) {
     const lines = [];
     for (let i = 0; i < numWorkers; ++i) {
         lines.push(Array());
@@ -44,21 +44,21 @@ function getLinesArray(yMax, yMin, numWorkers, stepY) {
     return lines;
 }
 
-async function getPoints(polygon, pixelSizesInCoordinates, numWorkers) {
-    const N = polygon.length;
+async function GetPoints(polygon, pixelSizesInCoordinates, numWorkers) {
+    const n = polygon.length;
     const stepY = pixelSizesInCoordinates[0];
 
     let yMax = polygon[0][0];
     let yMin = polygon[0][0];
-    for (let i = 1; i < N; ++i) {
+    for (let i = 1; i < n; ++i) {
         yMax = Math.max(yMax, polygon[i][0]);
         yMin = Math.min(yMin, polygon[i][0]);
     }
-    let lines = getLinesArray(yMax, yMin, numWorkers, stepY);
-    return await processLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers).then(results => { return results; }).catch(error => { console.error(error); });
+    let lines = GetLinesArray(yMax, yMin, numWorkers, stepY);
+    return await ProcessLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers).then(results => { return results; }).catch(error => { console.error(error); });
 }
 
-function isClockwise(polygon) {
+function IsClockwise(polygon) {
     const N = polygon.length;
     let sum = 0;
     for (let i = 0; i < N; ++i) {
@@ -71,18 +71,20 @@ function isClockwise(polygon) {
     return (sum < 0);
 }
 
-async function raptorFunc(polygon, pixelSizesInCoordinates, log_result=false) {
+async function RaptorFunc(polygon, pixelSizesInCoordinates, logResult=false) {
     if (polygon.length == 0) {}
-    if (polygon[0] == polygon[polygon.length - 1])
-    if (isClockwise(polygon)) {
+    if (polygon[0] == polygon[polygon.length - 1]) {
+        polygon.pop();
+    }
+    if (IsClockwise(polygon)) {
         polygon.reverse();
     } // the polygon verteces go counterclockwise
     const numWorkers = navigator.hardwareConcurrency;
-    let pointsList = await getPoints(polygon, pixelSizesInCoordinates, numWorkers);
-    if (log_result) {
+    let pointsList = await GetPoints(polygon, pixelSizesInCoordinates, numWorkers);
+    if (logResult) {
         console.log(pointsList);
     }
     return pointsList;
 }
 
-raptorFunc([[0, 4], [2, 3], [2, 5], [3, 6], [3, 3], [6, 5], [1, 7], [8, 5], [2, 0], [3, 2]], [0.1, 0.1], true);
+RaptorFunc([[0, 4], [2, 3], [2, 5], [3, 6], [3, 3], [6, 5], [1, 7], [8, 5], [2, 0], [3, 2]], [0.1, 0.1], true);

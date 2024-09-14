@@ -9,11 +9,12 @@ class Segment {
 }
 
 self.onmessage = function (e) {
-    const { lines, polygon } = e.data;
+    const { lines, polygon, pixelSizesInCoordinates } = e.data;
     const intersections = [];
     lines.forEach(y => {
         const lineIntersections = calculateIntersections(y, polygon);
-        intersections.push(...lineIntersections);
+        const points = getPointsFromLines(lineIntersections, pixelSizesInCoordinates);
+        intersections.push(...points);
     });
     self.postMessage(intersections);
 };
@@ -132,6 +133,20 @@ function makePretty(segments) {
             x2 = segments[i].x2;
         }
         result.push(new Segment(y, x1, x2));
+    }
+    return result;
+}
+
+function getPointsFromLines(lines, pixelSizesInCoordinates) {
+    let result = [];
+    const stepX = pixelSizesInCoordinates[1];
+    for (let i = 0; i < lines.length; ++i) {
+        const y = lines[i].y;
+        const x1 = lines[i].x1;
+        const x2 = lines[i].x2;
+        for (let x = x1; x <= x2; x += stepX) {
+            result.push([y, x]);
+        }
     }
     return result;
 }

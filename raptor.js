@@ -1,16 +1,6 @@
 "use strict";
 
-function id2cord(pos, shapes, matrixSizes) {
-    return [shapes[0][0] + 0.5 + pos[0] * (shapes[0][1] - shapes[0][0]) / (matrixSizes[0] - 1),
-    shapes[1][0] + 0.5 + pos[1] * (shapes[1][1] - shapes[1][0]) / (matrixSizes[1] - 1)];
-}
-
-function cord2id(pos, shapes, matrixSizes) {
-    return [Math.floor(0.5 + (pos[0] - shapes[0][0]) * (matrixSizes[0] - 1) / (shapes[0][1] - shapes[0][0])),
-    Math.floor(0.5 + (pos[1] - shapes[1][0]) * (matrixSizes[1] - 1) / (shapes[1][1] - shapes[1][0]))];
-}
-
-function processLinesWithWorkers(lines, polygon, numWorkers) {
+function processLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers) {
     const workers = [];
     let results = [];
     let cnt = 0;
@@ -33,7 +23,7 @@ function processLinesWithWorkers(lines, polygon, numWorkers) {
                 reject(err);
             };
 
-            worker.postMessage({ lines: linesChunk, polygon: polygon });
+            worker.postMessage({ lines: linesChunk, polygon: polygon, pixelSizesInCoordinates: pixelSizesInCoordinates });
         }
     });
 }
@@ -54,11 +44,9 @@ function getLinesArray(yMax, yMin, numWorkers, stepY) {
     return lines;
 }
 
-async function getSegments(polygon, shapes, matrixSizes, numWorkers) {
+async function getPoints(polygon, pixelSizesInCoordinates, numWorkers) {
     const N = polygon.length;
-    // const stepY = Math.abs(id2cord([0, 0], shapes, matrixSizes)[0] - id2cord([1, 0], shapes, matrixSizes)[0]);
-    const stepY = 0.5;
-    const stepX = Math.abs(id2cord([0, 0], shapes, matrixSizes)[1] - id2cord([0, 1], shapes, matrixSizes)[1]);
+    const stepY = pixelSizesInCoordinates[0];
 
     let yMax = polygon[0][0];
     let yMin = polygon[0][0];
@@ -67,7 +55,7 @@ async function getSegments(polygon, shapes, matrixSizes, numWorkers) {
         yMin = Math.min(yMin, polygon[i][0]);
     }
     let lines = getLinesArray(yMax, yMin, numWorkers, stepY);
-    return await processLinesWithWorkers(lines, polygon, numWorkers).then(results => { return results; }).catch(error => { console.error(error); });
+    return await processLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers).then(results => { return results; }).catch(error => { console.error(error); });
 }
 
 function isClockwise(polygon) {
@@ -83,35 +71,18 @@ function isClockwise(polygon) {
     return (sum < 0);
 }
 
-function formResultString(segmentsList) {
-    let result = "";
-    for (let i = 0; i < segmentsList.length; ++i) {
-        const y = segmentsList[i].y;
-        const x1 = segmentsList[i].x1;
-        let x2 = segmentsList[i].x2;
-        result += "y, x1, x2 : " + String(y) + "      " + String(x1) + "      " + String(x2) + "\n";
-    }
-    return result;
-}
-
-async function raptorFunc(data, polygon, shapes) {
+async function raptorFunc(polygon, pixelSizesInCoordinates, log_result=false) {
+    if (polygon.length == 0) {}
+    if (polygon[0] == polygon[polygon.length - 1])
     if (isClockwise(polygon)) {
         polygon.reverse();
     } // the polygon verteces go counterclockwise
-    const n = data.length;
-    if (n == 0) {
-        return "";
-    }
-    const m = data[0].length;
     const numWorkers = navigator.hardwareConcurrency;
-    let segmentsList = await getSegments(polygon, shapes, [n, m], numWorkers);
-    return formResultString(segmentsList);
+    let pointsList = await getPoints(polygon, pixelSizesInCoordinates, numWorkers);
+    if (log_result) {
+        console.log(pointsList);
+    }
+    return pointsList;
 }
 
-async function fillPage() {
-    var p = document.getElementById("paragraphId");
-    p.textContent = await raptorFunc([[0.3, 0.4], [0.1, 0.2]],
-        [[0, 4], [2, 3], [2, 5], [3, 6], [3, 3], [6, 5], [1, 7], [8, 5], [2, 0], [3, 2]], [[-85.6, 85.6], [-180, 180]]);
-}
-
-fillPage();
+raptorFunc([[0, 4], [2, 3], [2, 5], [3, 6], [3, 3], [6, 5], [1, 7], [8, 5], [2, 0], [3, 2]], [0.1, 0.1], true);

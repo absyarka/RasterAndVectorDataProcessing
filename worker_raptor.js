@@ -57,10 +57,10 @@ function CalculateIntersections(y, polygon) {
             intersectionPos.push(x);
         }
     }
-    let vertexIdKeys1 = Object.keys(vertexId);
+    let vertexIdKeysTmp = Object.keys(vertexId);
     let vertexIdKeys = [];
-    for (let i = 0; i < vertexIdKeys1.length; ++i) {
-        vertexIdKeys.push(Number(vertexIdKeys1[i]));
+    for (let i = 0; i < vertexIdKeysTmp.length; ++i) {
+        vertexIdKeys.push(Number(vertexIdKeysTmp[i]));
     }
     intersectionPos.sort((a, b) => a - b);
     intersectionPos = [...new Set(intersectionPos)];

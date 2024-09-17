@@ -101,5 +101,3 @@ async function RaptorFunc(polygon, pixelSizesInCoordinates, logResult=false) {
     let pointsList = await GetPoints(polygon, pixelSizesInCoordinates);
     return MakeResult(pointsList, logResult);
 }
-
-RaptorFunc([[0, 4], [2, 3], [2, 5], [3, 6], [3, 3], [6, 5], [1, 7], [8, 5], [2, 0], [3, 2]], [0.1, 0.1], true);

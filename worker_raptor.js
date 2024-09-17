@@ -9,115 +9,118 @@ class KSegment {
 }
 
 self.onmessage = function (e) {
-    const { lines, polygon, pixelSizesInCoordinates } = e.data;
+    const { lines, polygons, pixelSizesInCoordinates } = e.data;
     const intersections = [];
     lines.forEach(y => {
-        const lineIntersections = CalculateIntersections(y, polygon);
+        const lineIntersections = CalculateIntersections(y, polygons);
         const points = GetPointsFromLines(lineIntersections, pixelSizesInCoordinates);
         intersections.push(...points);
     });
     self.postMessage(intersections);
 };
 
-function CalculateIntersections(y, polygon) {
+function CalculateIntersections(y, polygons) {
     const EPSILON = 1e-9;
-    const N = polygon.length;
-    let vertexId = new Map();
-    let intersectionPos = [];
-    for (let i = 0; i < N; ++i) {
-        if (polygon[i][0] == y) {
-            vertexId[Number(polygon[i][1])] = i;
-        }
-        const x1 = polygon[i][1];
-        const y1 = polygon[i][0];
-        const x2 = polygon[(i + 1) % N][1];
-        const y2 = polygon[(i + 1) % N][0];
-
-        const miY = Math.min(y1, y2);
-        const maY = Math.max(y1, y2);
-        if (y < miY || y > maY) {
-            continue;
-        }
-
-        if (y1 == y) {
-            intersectionPos.push(x1);
-        }
-
-        if (y1 == y || y2 == y || y1 == y2) {
-            continue;
-        }
-
-        const A = y2 - y1;
-        const B = x1 - x2;
-        const C = (y1 - y2) * x1 + (x2 - x1) * y1;
-        const x = (-C - B * y) / A;
-        const miX = Math.min(x1, x2);
-        const maX = Math.max(x1, x2);
-        if (x >= miX && x <= maX) {
-            intersectionPos.push(x);
-        }
-    }
-    let vertexIdKeysTmp = Object.keys(vertexId);
-    let vertexIdKeys = [];
-    for (let i = 0; i < vertexIdKeysTmp.length; ++i) {
-        vertexIdKeys.push(Number(vertexIdKeysTmp[i]));
-    }
-    intersectionPos.sort((a, b) => a - b);
-    intersectionPos = [...new Set(intersectionPos)];
-    const K = intersectionPos.length;
     let segments = [];
-    if (K == 1) {
-        segments.push(new KSegment(y, intersectionPos[0], intersectionPos[0]));
-        return segments;
-    }
-    let flags = Array.from({ length: K }, (v, i) => 0);
-    flags[0] = -1;
-    for (let i = 0; i < K - 1; ++i) {
-        if (vertexIdKeys.includes(intersectionPos[i])) {
-            let id = vertexId[intersectionPos[i]];
-            let Ax = polygon[id][1];
-            let Ay = polygon[id][0];
-            let Bx = polygon[(id + 1) % N][1];
-            let By = polygon[(id + 1) % N][0];
-            let Cx = polygon[(id + N - 1) % N][1];
-            let Cy = polygon[(id + N - 1) % N][0];
-            let Dx = Ax + 1;
-            let Dy = Ay;
-            let ABx = Bx - Ax;
-            let ABy = By - Ay;
-            let ACx = Cx - Ax;
-            let ACy = Cy - Ay;
-            let ADx = Dx - Ax;
-            let ADy = Dy - Ay;
-            let CAD = Math.atan2(ACx * ADy - ACy * ADx, ACx * ADx + ACy * ADy);
-            if (CAD < -EPSILON) {
-                CAD = 2 * Math.PI + CAD;
+    for (let polygonId = 0; polygonId < polygons.length; ++polygonId) {
+        const polygon = polygons[polygonId];
+        const N = polygon.length;
+        let intersectionPos = [];
+        let vertexId = new Map();
+        for (let i = 0; i < N; ++i) {
+            if (polygon[i][0] == y) {
+                vertexId[Number(polygon[i][1])] = i;
             }
-            let CAB = Math.atan2(ACx * ABy - ACy * ABx, ACx * ABx + ACy * ABy);
-            if (CAB < -EPSILON) {
-                CAB = 2 * Math.PI + CAB;
-            }
-            if (intersectionPos[i + 1] == Cx || intersectionPos[i + 1] == Bx) {
-                flags[i + 1] = 1;
-                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
+            const x1 = polygon[i][1];
+            const y1 = polygon[i][0];
+            const x2 = polygon[(i + 1) % N][1];
+            const y2 = polygon[(i + 1) % N][0];
+
+            const miY = Math.min(y1, y2);
+            const maY = Math.max(y1, y2);
+            if (y < miY || y > maY) {
                 continue;
             }
-            if (CAB < CAD) {
-                flags[i + 1] = 1;
-                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
-            } else {
-                segments.push(new KSegment(y, Ax, Ax));
-                flags[i + 1] = -1;
+
+            if (y1 == y) {
+                intersectionPos.push(x1);
             }
-        } else {
-            flags[i + 1] = -flags[i];
-            if (flags[i + 1] == 1) {
-                segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
+
+            if (y1 == y || y2 == y || y1 == y2) {
+                continue;
+            }
+
+            const A = y2 - y1;
+            const B = x1 - x2;
+            const C = (y1 - y2) * x1 + (x2 - x1) * y1;
+            const x = (-C - B * y) / A;
+            const miX = Math.min(x1, x2);
+            const maX = Math.max(x1, x2);
+            if (x >= miX && x <= maX) {
+                intersectionPos.push(x);
             }
         }
-    }
-    if (vertexIdKeys.includes(intersectionPos[K - 1])) {
-        segments.push(new KSegment(y, intersectionPos[K - 1], intersectionPos[K - 1]));
+        let vertexIdKeysTmp = Object.keys(vertexId);
+        let vertexIdKeys = [];
+        for (let i = 0; i < vertexIdKeysTmp.length; ++i) {
+            vertexIdKeys.push(Number(vertexIdKeysTmp[i]));
+        }
+        intersectionPos.sort((a, b) => a - b);
+        intersectionPos = [...new Set(intersectionPos)];
+        const K = intersectionPos.length;
+        if (K == 1) {
+            segments.push(new KSegment(y, intersectionPos[0], intersectionPos[0]));
+            continue;
+        }
+        let flags = Array.from({ length: K }, (v, i) => 0);
+        flags[0] = -1;
+        for (let i = 0; i < K - 1; ++i) {
+            if (vertexIdKeys.includes(intersectionPos[i])) {
+                let id = vertexId[intersectionPos[i]];
+                let Ax = polygon[id][1];
+                let Ay = polygon[id][0];
+                let Bx = polygon[(id + 1) % N][1];
+                let By = polygon[(id + 1) % N][0];
+                let Cx = polygon[(id + N - 1) % N][1];
+                let Cy = polygon[(id + N - 1) % N][0];
+                let Dx = Ax + 1;
+                let Dy = Ay;
+                let ABx = Bx - Ax;
+                let ABy = By - Ay;
+                let ACx = Cx - Ax;
+                let ACy = Cy - Ay;
+                let ADx = Dx - Ax;
+                let ADy = Dy - Ay;
+                let CAD = Math.atan2(ACx * ADy - ACy * ADx, ACx * ADx + ACy * ADy);
+                if (CAD < -EPSILON) {
+                    CAD = 2 * Math.PI + CAD;
+                }
+                let CAB = Math.atan2(ACx * ABy - ACy * ABx, ACx * ABx + ACy * ABy);
+                if (CAB < -EPSILON) {
+                    CAB = 2 * Math.PI + CAB;
+                }
+                if (intersectionPos[i + 1] == Cx || intersectionPos[i + 1] == Bx) {
+                    flags[i + 1] = 1;
+                    segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
+                    continue;
+                }
+                if (CAB < CAD) {
+                    flags[i + 1] = 1;
+                    segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
+                } else {
+                    segments.push(new KSegment(y, Ax, Ax));
+                    flags[i + 1] = -1;
+                }
+            } else {
+                flags[i + 1] = -flags[i];
+                if (flags[i + 1] == 1) {
+                    segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
+                }
+            }
+        }
+        if (vertexIdKeys.includes(intersectionPos[K - 1])) {
+            segments.push(new KSegment(y, intersectionPos[K - 1], intersectionPos[K - 1]));
+        }
     }
     return MakePretty(segments);
 }

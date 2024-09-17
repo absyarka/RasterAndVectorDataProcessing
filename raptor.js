@@ -1,6 +1,6 @@
 "use strict";
 
-async function ProcessLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers) {
+async function ProcessLinesWithWorkers(lines, polygons, pixelSizesInCoordinates, numWorkers) {
     const workers = [];
     let results = [];
     let cnt = 0;
@@ -23,7 +23,7 @@ async function ProcessLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, 
                 reject(err);
             };
 
-            worker.postMessage({ lines: linesChunk, polygon: polygon, pixelSizesInCoordinates: pixelSizesInCoordinates });
+            worker.postMessage({ lines: linesChunk, polygons: polygons, pixelSizesInCoordinates: pixelSizesInCoordinates });
         }
     });
 }
@@ -44,20 +44,24 @@ function GetLinesArray(yMax, yMin, numWorkers, stepY) {
     return lines;
 }
 
-async function GetPoints(polygon, pixelSizesInCoordinates) {
-    const n = polygon.length;
+async function GetPoints(polygons, pixelSizesInCoordinates) {
+    let yMax = polygons[0][0][0];
+    let yMin = polygons[0][0][0];
     const stepY = pixelSizesInCoordinates[0];
+
+    for (let polygonId = 0; polygonId < polygons.length; ++polygonId) {
+        const polygon = polygons[polygonId];
+        const n = polygon.length;
     
-    let yMax = polygon[0][0];
-    let yMin = polygon[0][0];
-    for (let i = 1; i < n; ++i) {
-        yMax = Math.max(yMax, polygon[i][0]);
-        yMin = Math.min(yMin, polygon[i][0]);
+        for (let i = 1; i < n; ++i) {
+            yMax = Math.max(yMax, polygon[i][0]);
+            yMin = Math.min(yMin, polygon[i][0]);
+        }
     }
 
     const numWorkers = navigator.hardwareConcurrency;
     let lines = GetLinesArray(yMax, yMin, numWorkers, stepY);
-    return await ProcessLinesWithWorkers(lines, polygon, pixelSizesInCoordinates, numWorkers);
+    return await ProcessLinesWithWorkers(lines, polygons, pixelSizesInCoordinates, numWorkers);
 }
 
 function IsClockwise(polygon) {
@@ -73,17 +77,20 @@ function IsClockwise(polygon) {
     return (sum < 0);
 }
 
-function PrepareVector(polygon) {
-    if (polygon.length > 0 && polygon[0] == polygon[polygon.length - 1]) {
-        polygon.pop();
+function PrepareVector(polygons) {
+    for (let polygonId = 0; polygonId < polygons.length; ++polygonId) {
+        let polygon = polygons[polygonId];
+        if (polygon.length > 0 && polygon[0] == polygon[polygon.length - 1]) {
+            polygon.pop();
+        }
+        if (polygon.length < 3) {
+            polygon = undefined;
+            return;
+        }
+        if (IsClockwise(polygon)) {
+            polygon.reverse();
+        } // the polygon verteces go counterclockwise
     }
-    if (polygon.length < 3) {
-        polygon = undefined;
-        return;
-    }
-    if (IsClockwise(polygon)) {
-        polygon.reverse();
-    } // the polygon verteces go counterclockwise
 }
 
 function MakeResult(pointsList, logResult) {
@@ -93,11 +100,11 @@ function MakeResult(pointsList, logResult) {
     return pointsList;
 }
 
-async function RaptorFunc(polygon, pixelSizesInCoordinates, logResult=false) {
-    PrepareVector(polygon);
-    if (polygon == undefined) {
+async function RaptorFunc(polygons, pixelSizesInCoordinates, logResult=false) {
+    PrepareVector(polygons);
+    if (polygons == undefined) {
         return [];
     }
-    let pointsList = await GetPoints(polygon, pixelSizesInCoordinates);
+    let pointsList = await GetPoints(polygons, pixelSizesInCoordinates);
     return MakeResult(pointsList, logResult);
 }

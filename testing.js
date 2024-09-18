@@ -55,14 +55,26 @@ async function Test() {
     const limit = 10;
     for (let i = 0; i < polygonCount; ++i) {
         const shift = i * limit;
-        polygons.push(GenerateTriangle([[shift, shift], [shift + limit, shift + limit]]));
+        polygons.push(GenerateTriangle([
+            [shift, shift], 
+            [shift + limit, shift + limit]
+        ]));
     }
     const pixelCountInCoordinates = [20, 20];
-    const pixelSizesInCoordinates = [1 / pixelCountInCoordinates[0], 1 / pixelCountInCoordinates[1]];
+    const pixelSizesInCoordinates = [
+        1 / pixelCountInCoordinates[0],
+        1 / pixelCountInCoordinates[1]
+    ];
     const rasterLimit = [[0, 0], [polygonCount * limit, polygonCount * limit]];
     let correctAns = 0;
-    for (let y = rasterLimit[0][0]; y < rasterLimit[1][0]; y += pixelSizesInCoordinates[0]) {
-        for (let x = rasterLimit[0][1]; x < rasterLimit[1][1]; x += pixelSizesInCoordinates[1]) {
+    for (let y = rasterLimit[0][0];
+             y <= rasterLimit[1][0];
+             y += pixelSizesInCoordinates[0])
+    {
+        for (let x = rasterLimit[0][1];
+                 x <= rasterLimit[1][1];
+                 x += pixelSizesInCoordinates[1])
+        {
             let flag = false;
             for (let polygonId = 0; polygonId < polygonCount; ++polygonId) {
                 const polygon = polygons[polygonId];
@@ -75,7 +87,8 @@ async function Test() {
             }
         }
     }
-    console.log(100 * ((await RaptorFunc(polygons, pixelSizesInCoordinates)).length - correctAns) / correctAns);
+    const ans = (await RaptorFunc(polygons, pixelSizesInCoordinates)).length;
+    console.log(100 * (ans - correctAns) / correctAns);
     console.log(polygons);
 }
 

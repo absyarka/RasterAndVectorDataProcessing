@@ -4,7 +4,8 @@ function GetRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-function GeneratePolygon(N, borders) {
+function GenerateTriangle(borders) {
+    const N = 3;
     let points = [];
     for (let i = 0; i < N; ++i) {
         const y = GetRandomArbitrary(borders[0][0], borders[1][0]);
@@ -54,7 +55,7 @@ async function Test() {
     const limit = 10;
     for (let i = 0; i < polygonCount; ++i) {
         const shift = i * limit;
-        polygons.push(GeneratePolygon(3, [[shift, shift], [shift + limit, shift + limit]]));
+        polygons.push(GenerateTriangle([[shift, shift], [shift + limit, shift + limit]]));
     }
     const pixelCountInCoordinates = [20, 20];
     const pixelSizesInCoordinates = [1 / pixelCountInCoordinates[0], 1 / pixelCountInCoordinates[1]];
@@ -71,17 +72,6 @@ async function Test() {
             }
             if (flag) {
                 ++correctAns;
-            }
-        }
-    }
-    const rasterSizes = [(rasterLimit[1][0] - rasterLimit[0][0]) * pixelCountInCoordinates[0], (rasterLimit[1][1] - rasterLimit[0][1]) * pixelCountInCoordinates[1], 2];
-    let raster = new Array(rasterSizes[0]);
-    for (let i = 0; i < rasterSizes[0]; ++i) {
-        raster[i] = new Array(rasterSizes[1]);
-        for (let j = 0; j < rasterSizes[1]; ++j) {
-            raster[i][j] = new Array(rasterSizes[2]);
-            for (let k = 0; k < rasterSizes[2]; ++k) {
-                raster[i][j][k] = GetRandomArbitrary(0, 100);
             }
         }
     }

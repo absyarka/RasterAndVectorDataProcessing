@@ -24,6 +24,9 @@ function CalculateIntersections(y, polygons) {
     let segments = [];
     for (let polygonId = 0; polygonId < polygons.length; ++polygonId) {
         const polygon = polygons[polygonId];
+        if (polygon == undefined) {
+            continue;
+        }
         const N = polygon.length;
         let intersectionPos = [];
         let vertexId = new Map();

@@ -1,6 +1,6 @@
 "use strict";
 
-async function ProcessLinesWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers) {
+async function ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers) {
     const workers = [];
     let results = [];
     let cnt = 0;
@@ -39,7 +39,7 @@ async function GetResults(polygons, fId, raster, pixelSizesInCoordinates) {
     if (numWorkers > polygons.length) {
         numWorkers = polygons.length;
     }
-    let results = await ProcessLinesWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers);
+    let results = await ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers);
     let result = [];
     let ids = [];
     for (let i = 0; i < numWorkers; ++i) {
@@ -94,9 +94,6 @@ function MakeResult(resultList, logResult) {
 
 async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false) {
     PrepareVector(polygons);
-    if (polygons == undefined) {
-        return [];
-    }
     let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates);
     return MakeResult(resultList, logResult);
 }

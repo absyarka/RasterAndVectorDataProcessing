@@ -1,21 +1,27 @@
 "use strict";
 
-async function ProcessLinesWithWorkers(lines, polygons, pixelSizesInCoordinates, numWorkers) {
+async function ProcessLinesWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers) {
     const workers = [];
     let results = [];
     let cnt = 0;
     return new Promise((resolve, reject) => {
         for (let i = 0; i < numWorkers; i++) {
             const worker = new Worker('worker_raptor.js');
-            const linesChunk = lines[i];
+            const polygonsChunk = [];
+            for (let j = i; j < polygons.length; j += numWorkers) {
+                polygonsChunk.push(polygons[i]);
+            }
             workers.push(worker);
 
             worker.onmessage = function (e) {
-                results.push(...e.data);
+                const {workerResults, workerId} = e.data;
+                results.push([workerResults, workerId]);
                 ++cnt;
                 worker.terminate();
-                if (cnt === lines.length) {
-                    resolve(results);
+                if (cnt == numWorkers) {
+                    for (let cnt = 0; cnt < polygons.length; ++cnt) {
+                        resolve(results);
+                    }
                 }
             };
 
@@ -23,45 +29,31 @@ async function ProcessLinesWithWorkers(lines, polygons, pixelSizesInCoordinates,
                 reject(err);
             };
 
-            worker.postMessage({ lines: linesChunk, polygons: polygons, pixelSizesInCoordinates: pixelSizesInCoordinates });
+            worker.postMessage({ workerId: i, polygons: polygonsChunk, fId: fId, raster: raster, pixelSizesInCoordinates: pixelSizesInCoordinates });
         }
     });
 }
 
-function GetLinesArray(yMax, yMin, numWorkers, stepY) {
-    const lines = [];
-    for (let i = 0; i < numWorkers; ++i) {
-        lines.push(Array());
-    }
-    let tmp = 0;
-    for (let y = yMax; y >= yMin; y -= stepY) {
-        lines[tmp].push(y);
-        ++tmp;
-        if (tmp >= numWorkers) {
-            tmp = 0;
-        }
-    }
-    return lines;
-}
-
-async function GetPoints(polygons, pixelSizesInCoordinates) {
-    let yMax = polygons[0][0][0];
-    let yMin = polygons[0][0][0];
-    const stepY = pixelSizesInCoordinates[0];
-
-    for (let polygonId = 0; polygonId < polygons.length; ++polygonId) {
-        const polygon = polygons[polygonId];
-        const n = polygon.length;
-    
-        for (let i = 1; i < n; ++i) {
-            yMax = Math.max(yMax, polygon[i][0]);
-            yMin = Math.min(yMin, polygon[i][0]);
-        }
-    }
-
+async function GetResults(polygons, fId, raster, pixelSizesInCoordinates) {
     const numWorkers = navigator.hardwareConcurrency;
-    let lines = GetLinesArray(yMax, yMin, numWorkers, stepY);
-    return await ProcessLinesWithWorkers(lines, polygons, pixelSizesInCoordinates, numWorkers);
+    if (numWorkers > polygons.length) {
+        numWorkers = polygons.length;
+    }
+    let results = await ProcessLinesWithWorkers(polygons, fId, raster, pixelSizesInCoordinates, numWorkers);
+    let result = [];
+    let ids = [];
+    for (let i = 0; i < numWorkers; ++i) {
+        ids.push(0);
+    }
+    for (let cnt = 0; cnt < polygons.length; ++cnt) {
+        for (let id = 0; id < numWorkers; ++id) {
+            if (results[id][1] == cnt) {
+                result.push(results[id][0][ids[cnt]]);
+                ++ids[cnt];
+            }
+        }
+    }
+    return result;
 }
 
 function IsClockwise(polygon) {
@@ -93,18 +85,18 @@ function PrepareVector(polygons) {
     }
 }
 
-function MakeResult(pointsList, logResult) {
+function MakeResult(resultList, logResult) {
     if (logResult) {
-        console.log(pointsList);
+        console.log(resultList);
     }
-    return pointsList;
+    return resultList;
 }
 
-async function RaptorFunc(polygons, pixelSizesInCoordinates, logResult=false) {
+async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false) {
     PrepareVector(polygons);
     if (polygons == undefined) {
         return [];
     }
-    let pointsList = await GetPoints(polygons, pixelSizesInCoordinates);
-    return MakeResult(pointsList, logResult);
+    let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates);
+    return MakeResult(resultList, logResult);
 }

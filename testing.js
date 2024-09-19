@@ -49,7 +49,7 @@ function IsPointInTriangle(point, triangle) {
     return (lessZero == 0) || (lessZero == vectorProducts.length);
 }
 
-async function Test() {
+async function Test(fId, raster) {
     const polygonCount = 10;
     let polygons = [];
     const limit = 10;
@@ -87,9 +87,8 @@ async function Test() {
             }
         }
     }
-    const ans = (await RaptorFunc(polygons, pixelSizesInCoordinates)).length;
-    console.log(100 * (ans - correctAns) / correctAns);
+    await RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, true);
     console.log(polygons);
 }
 
-Test();
+Test(0, 0);

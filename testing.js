@@ -31,6 +31,8 @@ async function Test(fId, raster) {
         1 / pixelCountInCoordinates[0],
         1 / pixelCountInCoordinates[1]
     ];
+    console.log("polygons count: ", polygons.length);
+    console.log("max possible area: ", limit, " x ", limit);
     console.log("pixelSizesInCoordinates", pixelSizesInCoordinates);
     let startTime = new Date();
     await RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, false);
@@ -40,7 +42,6 @@ async function Test(fId, raster) {
     await RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, false, 1);
     endTime = new Date();
     console.log("result on ", 1, " thread: ", endTime - startTime);
-    console.log(polygons);
 }
 
 Test(0, 0);

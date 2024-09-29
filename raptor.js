@@ -9,7 +9,7 @@ async function ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates
             const worker = new Worker('worker_raptor.js');
             const polygonsChunk = [];
             for (let j = i; j < polygons.length; j += numWorkers) {
-                polygonsChunk.push(polygons[i]);
+                polygonsChunk.push(polygons[j]);
             }
             workers.push(worker);
 
@@ -19,9 +19,7 @@ async function ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates
                 ++cnt;
                 worker.terminate();
                 if (cnt == numWorkers) {
-                    for (let cnt = 0; cnt < polygons.length; ++cnt) {
-                        resolve(results);
-                    }
+                    resolve(results);
                 }
             };
 
@@ -34,8 +32,7 @@ async function ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates
     });
 }
 
-async function GetResults(polygons, fId, raster, pixelSizesInCoordinates, OneWorker) {
-    const numWorkers = (OneWorker ? 1 : navigator.hardwareConcurrency);
+async function GetResults(polygons, fId, raster, pixelSizesInCoordinates, numWorkers) {
     if (numWorkers > polygons.length) {
         numWorkers = polygons.length;
     }
@@ -47,9 +44,9 @@ async function GetResults(polygons, fId, raster, pixelSizesInCoordinates, OneWor
     }
     for (let cnt = 0; cnt < polygons.length; ++cnt) {
         for (let id = 0; id < numWorkers; ++id) {
-            if (results[id][1] == cnt) {
-                result.push(results[id][0][ids[cnt]]);
-                ++ids[cnt];
+            if (results[id][1] == (cnt % numWorkers)) {
+                result.push(results[id][0][ids[id]]);
+                ++ids[id];
             }
         }
     }
@@ -92,8 +89,8 @@ function MakeResult(resultList, logResult) {
     return resultList;
 }
 
-async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false, OneWorker=false) {
+async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false, numWorkers=Math.max(navigator.hardwareConcurrency - 2, 1)) {
     PrepareVector(polygons);
-    let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates, OneWorker);
+    let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates, numWorkers);
     return MakeResult(resultList, logResult);
 }

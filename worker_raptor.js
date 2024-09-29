@@ -61,6 +61,7 @@ self.onmessage = function (e) {
 };
 
 function IsNextSegmentInside(A, B, C, D) {
+    const EPSILON = 1e-9;
     let ABx = B[1] - A[1];
     let ABy = B[0] - A[0];
     let ACx = C[1] - A[1];
@@ -79,7 +80,6 @@ function IsNextSegmentInside(A, B, C, D) {
 }
 
 function CalculateIntersections(y, polygon) {
-    const EPSILON = 1e-9;
     let segments = [];
     if (polygon == undefined) {
         return [];

@@ -60,6 +60,24 @@ self.onmessage = function (e) {
     self.postMessage({workerResults: results, workerId: workerId});
 };
 
+function IsNextSegmentInside(A, B, C, D) {
+    let ABx = B[1] - A[1];
+    let ABy = B[0] - A[0];
+    let ACx = C[1] - A[1];
+    let ACy = C[0] - A[0];
+    let ADx = D[1] - A[1];
+    let ADy = D[0] - A[0];
+    let CAD = Math.atan2(ACx * ADy - ACy * ADx, ACx * ADx + ACy * ADy);
+    if (CAD < -EPSILON) {
+        CAD = 2 * Math.PI + CAD;
+    }
+    let CAB = Math.atan2(ACx * ABy - ACy * ABx, ACx * ABx + ACy * ABy);
+    if (CAB < -EPSILON) {
+        CAB = 2 * Math.PI + CAB;
+    }
+    return CAB < CAD;
+}
+
 function CalculateIntersections(y, polygon) {
     const EPSILON = 1e-9;
     let segments = [];
@@ -119,34 +137,16 @@ function CalculateIntersections(y, polygon) {
     for (let i = 0; i < K - 1; ++i) {
         if (vertexIdKeys.includes(intersectionPos[i])) {
             let id = vertexId[intersectionPos[i]];
-            let Ax = polygon[id][1];
-            let Ay = polygon[id][0];
-            let Bx = polygon[(id + 1) % N][1];
-            let By = polygon[(id + 1) % N][0];
-            let Cx = polygon[(id + N - 1) % N][1];
-            let Cy = polygon[(id + N - 1) % N][0];
-            let Dx = Ax + 1;
-            let Dy = Ay;
-            let ABx = Bx - Ax;
-            let ABy = By - Ay;
-            let ACx = Cx - Ax;
-            let ACy = Cy - Ay;
-            let ADx = Dx - Ax;
-            let ADy = Dy - Ay;
-            let CAD = Math.atan2(ACx * ADy - ACy * ADx, ACx * ADx + ACy * ADy);
-            if (CAD < -EPSILON) {
-                CAD = 2 * Math.PI + CAD;
-            }
-            let CAB = Math.atan2(ACx * ABy - ACy * ABx, ACx * ABx + ACy * ABy);
-            if (CAB < -EPSILON) {
-                CAB = 2 * Math.PI + CAB;
-            }
-            if (intersectionPos[i + 1] == Cx || intersectionPos[i + 1] == Bx) {
+            let A = polygon[id];
+            let B = polygon[(id + 1) % N];
+            let C = polygon[(id + N - 1) % N];
+            let D = [A[0], A[1] + 1];
+            if (intersectionPos[i + 1] == C[1] || intersectionPos[i + 1] == B[1]) {
                 flags[i + 1] = 1;
                 segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
                 continue;
             }
-            if (CAB < CAD) {
+            if (IsNextSegmentInside(A, B, C, D)) {
                 flags[i + 1] = 1;
                 segments.push(new KSegment(y, intersectionPos[i], intersectionPos[i + 1]));
             } else {

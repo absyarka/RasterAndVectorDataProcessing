@@ -16,7 +16,7 @@ function GenerateTriangle(borders) {
 }
 
 async function Test(fId, raster) {
-    const polygonCount = 10;
+    const polygonCount = 500;
     let polygons = [];
     const limit = 10;
     for (let i = 0; i < polygonCount; ++i) {
@@ -26,13 +26,20 @@ async function Test(fId, raster) {
             [shift + limit, shift + limit]
         ]));
     }
-    const pixelCountInCoordinates = [20, 20];
+    const pixelCountInCoordinates = [100, 100];
     const pixelSizesInCoordinates = [
         1 / pixelCountInCoordinates[0],
         1 / pixelCountInCoordinates[1]
     ];
-    // const rasterLimit = [[0, 0], [polygonCount * limit, polygonCount * limit]];
+    console.log("pixelSizesInCoordinates", pixelSizesInCoordinates);
+    let startTime = new Date();
     await RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, true);
+    let endTime = new Date();
+    console.log("result on ", navigator.hardwareConcurrency, " threads: ", endTime - startTime);
+    startTime = new Date();
+    await RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, true, true);
+    endTime = new Date();
+    console.log("result on 1 thread: ", endTime - startTime);
     console.log(polygons);
 }
 

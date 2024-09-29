@@ -34,8 +34,8 @@ async function ProcessWithWorkers(polygons, fId, raster, pixelSizesInCoordinates
     });
 }
 
-async function GetResults(polygons, fId, raster, pixelSizesInCoordinates) {
-    const numWorkers = navigator.hardwareConcurrency;
+async function GetResults(polygons, fId, raster, pixelSizesInCoordinates, OneWorker) {
+    const numWorkers = (OneWorker ? 1 : navigator.hardwareConcurrency);
     if (numWorkers > polygons.length) {
         numWorkers = polygons.length;
     }
@@ -92,8 +92,8 @@ function MakeResult(resultList, logResult) {
     return resultList;
 }
 
-async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false) {
+async function RaptorFunc(polygons, fId, raster, pixelSizesInCoordinates, logResult=false, OneWorker=false) {
     PrepareVector(polygons);
-    let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates);
+    let resultList = await GetResults(polygons, fId, raster, pixelSizesInCoordinates, OneWorker);
     return MakeResult(resultList, logResult);
 }

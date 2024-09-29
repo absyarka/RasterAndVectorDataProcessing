@@ -1,16 +1,49 @@
 "use strict";
 
-function EdgeValues(points, raster, pixelSizesInCoordinates) {
-    let ma = 0;
-    for (let i = 0; i < points.length; ++i) {
-        if (ma < points[i][0]) {
-            ma = points[i][0];
-        }
+function EdgeCoordinates(points, raster, pixelSizesInCoordinates) {
+    let ma = [points[0][0], points[0][1]];
+    let mi = [points[0][0], points[0][1]];
+    for (let i = 1; i < points.length; ++i) {
+        ma[0] = Math.max(ma[0], points[i][0]);
+        ma[1] = Math.max(ma[1], points[i][1]);
+        mi[0] = Math.min(mi[0], points[i][0]);
+        mi[1] = Math.min(mi[1], points[i][1]);
     }
-    return ma;
+    return [ma, mi];
 }
 
-const f = [EdgeValues];
+function AverageValue(points, raster, pixelSizesInCoordinates) {
+    const pixelCountInCoordinates = [Math.round(1 / pixelSizesInCoordinates[0]), Math.round(1 / pixelSizesInCoordinates[1])];
+    console.log("points to agregate count: ", points.length);
+    let rasterSizes = raster["sizes"];
+    let arr = raster["raster"];
+    let sumValues = [];
+    for (let i = 0; i < rasterSizes[2]; ++i) {
+        sumValues.push(0);
+    }
+    for (let pointId = 0; pointId < points.length; ++pointId) {
+        const point = points[pointId];
+        let id = [
+            Math.floor(point[0] * pixelCountInCoordinates[0]),
+            Math.floor(point[1] * pixelCountInCoordinates[1])
+        ];
+        if (id[0] == arr.length) {
+            --id[0];
+        }
+        if (id[1] == arr[0].length) {
+            --id[1];
+        }
+        for (let i = 0; i < rasterSizes[2]; ++i) {
+            sumValues[i] += arr[id[0]][id[1]][i];
+        }
+    }
+    for (let i = 0; i < rasterSizes[2]; ++i) {
+        sumValues[i] /= points.length;
+    }
+    return sumValues;
+}
+
+const f = [EdgeCoordinates, AverageValue];
 
 class KSegment {
     constructor(y, x1, x2) {

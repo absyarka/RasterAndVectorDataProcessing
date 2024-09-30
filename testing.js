@@ -145,14 +145,12 @@ async function Test(fId) {
         console.log("polygons count: ", polygons.length);
         console.log("max possible area: ", limit, " x ", limit);
         console.log("pixelSizesInCoordinates", pixelSizesInCoordinates);
-        let startTime = new Date();
-        await RaptorFunc(polygons, fId, undefined, pixelSizesInCoordinates, false);
-        let endTime = new Date();
-        console.log("result on ", Math.max(1, navigator.hardwareConcurrency - 2), " threads: ", endTime - startTime);
-        startTime = new Date();
-        await RaptorFunc(polygons, fId, undefined, pixelSizesInCoordinates, false, 1);
-        endTime = new Date();
-        console.log("result on ", 1, " thread: ", endTime - startTime);
+        for (threadCount = 1; threadCount < 9; ++threadCount) {
+            let startTime = new Date();
+            await RaptorFunc(polygons, fId, undefined, pixelSizesInCoordinates, false, threadCount);
+            let endTime = new Date();
+            console.log("result on ", threadCount, " thread(s): ", endTime - startTime);    
+        }
         return;
     }
     let polygonCount = 1;
@@ -195,4 +193,4 @@ async function Test(fId) {
 }
 
 Test(0);
-Test(1);
+// Test(1);
